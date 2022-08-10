@@ -1,11 +1,11 @@
-# print('Setting UP')
-# import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+print('Setting UP')
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from utlis import *
 import Solver
 
 ########################################################################
-pathImage = "Resources/1.jpg"
+pathImage = "Resources/3.jpg"
 heightImg = 450
 widthImg = 450
 model = intializePredectionModel()  # LOAD THE CNN MODEL
@@ -14,7 +14,7 @@ model = intializePredectionModel()  # LOAD THE CNN MODEL
 
 #### 1. PREPARE THE IMAGE
 img = cv2.imread(pathImage)
-img = cv2.resize(img, (widthImg, heightImg))  # RESIZE IMAGE TO MAKE IT A SQUARE IMAGE
+img = cv2.resize(img, (widthImg, heightImg))             # RESIZE IMAGE TO MAKE IT A SQUARE IMAGE
 imgBlank = np.zeros((heightImg, widthImg, 3), np.uint8)  # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
 imgThreshold = preProcess(img)
 
@@ -42,7 +42,7 @@ if biggest.size != 0:
     imgSolvedDigits = imgBlank.copy()
     boxes = splitBoxes(imgWarpColored)
     print(len(boxes))
-    # cv2.imshow("Sample",boxes[65])
+    cv2.imshow("Sample",boxes[2])
     numbers = getPredection(boxes, model)
     print(numbers)
     imgDetectedDigits = displayNumbers(imgDetectedDigits, numbers, color=(255, 0, 255))
@@ -76,10 +76,12 @@ if biggest.size != 0:
     imgDetectedDigits = drawGrid(imgDetectedDigits)
     imgSolvedDigits = drawGrid(imgSolvedDigits)
 
-    imageArray = ([img,imgThreshold,imgContours, imgBigContour],
-                  [imgDetectedDigits, imgSolvedDigits,imgInvWarpColored,inv_perspective])
-    stackedImage = stackImages(imageArray, 1)
-    cv2.imshow('result',inv_perspective)
+    # imageArray = ([img,imgThreshold,imgContours, imgBigContour],
+    #               [imgDetectedDigits, imgSolvedDigits,imgInvWarpColored,inv_perspective])
+    # stackedImage = stackImages(imageArray, 1)
+    # cv2.imshow('result',stackedImage)
+    cv2.imshow('Input',img)
+    cv2.imshow('Result',inv_perspective)
 
 else:
     print("No Sudoku Found")

@@ -63,17 +63,15 @@ def getPredection(boxes,model):
         ## PREPARE IMAGE
         img = np.asarray(image)
         img = img[4:img.shape[0] - 4, 4:img.shape[1] -4]
-        img = cv2.resize(img, (32, 32))
+        img = cv2.resize(img, (48, 48))
         img = img / 255
-        img = img.reshape(1, 32, 32, 1)
+        img = img.reshape(1, 48, 48, 1)
         ## GET PREDICTION
         predictions = model.predict(img)
-        # print(predictions)
-        # classIndex = model.predict_classes(img)
-        classIndex = list(predictions[0]).index(np.amax(predictions))
+        classIndex = np.argmax(predictions, axis=-1)[0]
         probabilityValue = np.amax(predictions)
         ## SAVE TO RESULT
-        if probabilityValue > 0.6:
+        if probabilityValue > 0.8:
             result.append(classIndex)
         else:
             result.append(0)
