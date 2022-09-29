@@ -5,7 +5,7 @@ from keras.models import load_model
 
 #### READ THE MODEL WEIGHTS
 def intializePredectionModel():
-    model = load_model(r'C:\Users\ASUS\Desktop\Sudoku_solver\OCR\Model\OCR.h5')
+    model = load_model('OCR/Model/OCR.h5')
     return model
 
 
