@@ -1,95 +1,123 @@
-print('Setting UP')
+if __name__ == '__main__':
+    print('Setting UP')
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 from utlis import *
 import Solver
+import base64
 
+
+def ndarray_to_b64(ndarray):
+    """
+    converts a np ndarray to a b64 string readable by html-img tags 
+    """
+    img = cv2.cvtColor(ndarray, cv2.COLOR_RGB2BGR)
+    _, buffer = cv2.imencode('.png', img)
+    return base64.b64encode(buffer).decode('utf-8')
+
+
+def b64_to_ndarray(s):
+    print(s)
+    s=s.split(',')[1]
+    s=s.encode('utf-8')
+    s=base64.b64encode(s)
+    q = np.frombuffer(bytearray(s), dtype=np.uint32)
+    return q
 ########################################################################
-pathImage = "Resources/8.png"
+# pathImage = "Resources/3.png"
 heightImg = 450
 widthImg = 450
 model = intializePredectionModel()  # LOAD THE CNN MODEL
 ########################################################################
 
 
-#### 1. PREPARE THE IMAGE
-img = cv2.imread(pathImage)
-img = cv2.resize(img, (widthImg, heightImg))             # RESIZE IMAGE TO MAKE IT A SQUARE IMAGE
-imgBlank = np.zeros((heightImg, widthImg, 3), np.uint8)  # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
-imgThreshold = preProcess(img)
+def main():
+    #### 1. PREPARE THE IMAGE
+    img = cv2.imread('input/Input.png')
+    img = cv2.resize(img, (widthImg, heightImg))             # RESIZE IMAGE TO MAKE IT A SQUARE IMAGE
+    imgBlank = np.zeros((heightImg, widthImg, 3), np.uint8)  # CREATE A BLANK IMAGE FOR TESTING DEBUGING IF REQUIRED
+    imgThreshold = preProcess(img)
 
-#### 2. FIND ALL COUNTOURS
-imgContours = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
-imgBigContour = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
-contours, hierarchy = cv2.findContours(imgThreshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # FIND ALL CONTOURS
-cv2.drawContours(imgContours, contours, -1, (0, 255, 0), 3) # DRAW ALL DETECTED CONTOURS
+    #### 2. FIND ALL COUNTOURS
+    imgContours = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
+    imgBigContour = img.copy() # COPY IMAGE FOR DISPLAY PURPOSES
+    contours, hierarchy = cv2.findContours(imgThreshold, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # FIND ALL CONTOURS
+    cv2.drawContours(imgContours, contours, -1, (0, 255, 0), 3) # DRAW ALL DETECTED CONTOURS
 
-#### 3. FIND THE BIGGEST COUNTOUR AND USE IT AS SUDOKU
-biggest, maxArea = biggestContour(contours) # FIND THE BIGGEST CONTOUR
-# print(biggest)
-if biggest.size != 0:
-    biggest = reorder(biggest)
+    #### 3. FIND THE BIGGEST COUNTOUR AND USE IT AS SUDOKU
+    biggest, maxArea = biggestContour(contours) # FIND THE BIGGEST CONTOUR
     # print(biggest)
-    cv2.drawContours(imgBigContour, biggest, -1, (0, 0, 255), 25) # DRAW THE BIGGEST CONTOUR
-    pts1 = np.float32(biggest) # PREPARE POINTS FOR WARP
-    pts2 = np.float32([[0, 0],[widthImg, 0], [0, heightImg],[widthImg, heightImg]]) # PREPARE POINTS FOR WARP
-    matrix = cv2.getPerspectiveTransform(pts1, pts2) # GER
-    imgWarpColored = cv2.warpPerspective(img, matrix, (widthImg, heightImg))
-    imgDetectedDigits = imgBlank.copy()
-    imgWarpColored = cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
+    if biggest.size != 0:
+        biggest = reorder(biggest)
+        # print(biggest)
+        cv2.drawContours(imgBigContour, biggest, -1, (0, 0, 255), 25) # DRAW THE BIGGEST CONTOUR
+        pts1 = np.float32(biggest) # PREPARE POINTS FOR WARP
+        pts2 = np.float32([[0, 0],[widthImg, 0], [0, heightImg],[widthImg, heightImg]]) # PREPARE POINTS FOR WARP
+        matrix = cv2.getPerspectiveTransform(pts1, pts2) # GER
+        imgWarpColored = cv2.warpPerspective(img, matrix, (widthImg, heightImg))
+        imgDetectedDigits = imgBlank.copy()
+        imgWarpColored = cv2.cvtColor(imgWarpColored,cv2.COLOR_BGR2GRAY)
 
-    #### 4. SPLIT THE IMAGE AND FIND EACH DIGIT AVAILABLE
-    imgSolvedDigits = imgBlank.copy()
-    boxes = splitBoxes(imgWarpColored)
-    # print(len(boxes))
-    # cv2.imshow("Sample",boxes[2])
-    numbers = getPredection(boxes, model)
-    # print(numbers)
-    imgDetectedDigits = displayNumbers(imgDetectedDigits, numbers, color=(255, 0, 255))
-    numbers = np.asarray(numbers)
-    posArray = np.where(numbers > 0, 0, 1)
-    # print(posArray)
+        #### 4. SPLIT THE IMAGE AND FIND EACH DIGIT AVAILABLE
+        imgSolvedDigits = imgBlank.copy()
+        boxes = splitBoxes(imgWarpColored)
+        # print(len(boxes))
+        # cv2.imshow("Sample",boxes[2])
+        numbers = getPredection(boxes, model)
+        # print(numbers)
+        imgDetectedDigits = displayNumbers(imgDetectedDigits, numbers, color=(255, 0, 255))
+        numbers = np.asarray(numbers)
+        posArray = np.where(numbers > 0, 0, 1)
+        # print(posArray)
 
 
-    #### 5. FIND SOLUTION OF THE BOARD
-    board = np.array_split(numbers,9)
-    print()
-    print('******* Input Sudoko *******')
-    print()
-    Solver.print_board(board)
-    try:
-        Solver.solve(board)
-    except:
-        pass
-    print()
-    print('********** Answer **********')
-    print()
-    Solver.print_board(board)
-    flatList = []
-    for sublist in board:
-        for item in sublist:
-            flatList.append(item)
-    solvedNumbers =flatList*posArray
-    imgSolvedDigits= displayNumbers(imgSolvedDigits,solvedNumbers)
+        #### 5. FIND SOLUTION OF THE BOARD
+        board = np.array_split(numbers,9)
+        if __name__ == '__main__':
+            print()
+            print('******* Input Sudoko *******')
+            print()
+            Solver.print_board(board)
+        try:
+            Solver.solve(board)
+        except:
+            pass
+        if __name__ == '__main__':
+            print()
+            print('********** Answer **********')
+            print()
+            Solver.print_board(board)
+        flatList = []
+        for sublist in board:
+            for item in sublist:
+                flatList.append(item)
+        solvedNumbers =flatList*posArray
+        imgSolvedDigits= displayNumbers(imgSolvedDigits,solvedNumbers)
 
-    # #### 6. OVERLAY SOLUTION
-    pts2 = np.float32(biggest) # PREPARE POINTS FOR WARP
-    pts1 =  np.float32([[0, 0],[widthImg, 0], [0, heightImg],[widthImg, heightImg]]) # PREPARE POINTS FOR WARP
-    matrix = cv2.getPerspectiveTransform(pts1, pts2)  # GER
-    imgInvWarpColored = img.copy()
-    imgInvWarpColored = cv2.warpPerspective(imgSolvedDigits, matrix, (widthImg, heightImg))
-    inv_perspective = cv2.addWeighted(imgInvWarpColored, 1, img, 0.5, 1)
-    imgDetectedDigits = drawGrid(imgDetectedDigits)
-    imgSolvedDigits = drawGrid(imgSolvedDigits)
+        #### 6. OVERLAY SOLUTION
+        pts2 = np.float32(biggest) # PREPARE POINTS FOR WARP
+        pts1 =  np.float32([[0, 0],[widthImg, 0], [0, heightImg],[widthImg, heightImg]]) # PREPARE POINTS FOR WARP
+        matrix = cv2.getPerspectiveTransform(pts1, pts2)  # GER
+        imgInvWarpColored = img.copy()
+        imgInvWarpColored = cv2.warpPerspective(imgSolvedDigits, matrix, (widthImg, heightImg))
+        inv_perspective = cv2.addWeighted(imgInvWarpColored, 1, img, 0.5, 1)
+        imgDetectedDigits = drawGrid(imgDetectedDigits)
+        imgSolvedDigits = drawGrid(imgSolvedDigits)
 
-    # imageArray = ([img,imgThreshold,imgContours, imgBigContour],
-    #               [imgDetectedDigits, imgSolvedDigits,imgInvWarpColored,inv_perspective])
-    # stackedImage = stackImages(imageArray, 1)
-    # cv2.imshow('result',stackedImage)
-    cv2.imshow('Input',img)
-    cv2.imshow('Result',inv_perspective)
+        # imageArray = ([img,imgThreshold,imgContours, imgBigContour],
+        #               [imgDetectedDigits, imgSolvedDigits,imgInvWarpColored,inv_perspective])
+        # stackedImage = stackImages(imageArray, 1)
+        # cv2.imshow('result',stackedImage)
+        if __name__ == '__main__':
+            cv2.imshow('Input',img)
+            cv2.imshow('Result',inv_perspective)
+            cv2.waitKey(0)
+        return 'data:image/png;base64, ' + ndarray_to_b64(inv_perspective)
 
-else:
-    print("No Sudoku Found")
+    else:
+        print("No Sudoku Found")
 
-cv2.waitKey(0)
+
+
+if __name__ == '__main__':
+    main()
